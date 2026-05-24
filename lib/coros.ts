@@ -37,6 +37,7 @@ const USER_AGENT =
 const MOBILE_AES_IV = Buffer.from("weloop3_2015_03#", "ascii");
 
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // re-login every 12h
+const MAX_AUTH_RETRIES = 2; // re-login + retry this many times on a stale-token error
 
 function md5(value: string): string {
   return crypto.createHash("md5").update(value, "utf8").digest("hex");
@@ -121,23 +122,61 @@ function authHeaders(auth: Auth): Record<string, string> {
   };
 }
 
-/** GET a web endpoint, retrying once with a fresh token on auth failure. */
-async function webGet<T = any>(path: string): Promise<T> {
+/** A web response is "ok" when COROS returns result 0000 (or omits result). */
+function isOk(body: any): boolean {
+  return !body?.result || body.result === "0000";
+}
+
+/**
+ * Re-login on a stale token, but share ONE fresh login across concurrent
+ * callers. COROS web tokens are single-session: logging in elsewhere (e.g. on
+ * t.coros.com in a browser) rotates the token this server holds. When several
+ * in-flight requests all hit the invalidated token at once, they must reuse a
+ * single re-login — otherwise each re-login would invalidate the previous
+ * one's token in a cascade, and nothing would ever succeed.
+ */
+async function forceRelogin(staleToken: string): Promise<Auth> {
+  // Someone already refreshed the token we used — take theirs, don't re-login.
+  if (cachedAuth && cachedAuth.accessToken !== staleToken) return cachedAuth;
+  if (inflight) return inflight;
+  inflight = login()
+    .then((a) => {
+      cachedAuth = a;
+      return a;
+    })
+    .finally(() => {
+      inflight = null;
+    });
+  return inflight;
+}
+
+/**
+ * Run an authenticated request, transparently re-logging-in and retrying when
+ * COROS rejects the token. Returns the response's `data`.
+ */
+async function withAuthRetry<T = any>(
+  label: string,
+  run: (auth: Auth) => Promise<any>,
+): Promise<T> {
   let auth = await getAuth();
-  const url = `${WEB_BASE[auth.region]}${path}`;
-  let res = await fetch(url, { headers: authHeaders(auth) });
-  let body = await res.json().catch(() => ({}));
-  if (body?.result && body.result !== "0000") {
-    // token likely stale — force re-login once
-    cachedAuth = null;
-    auth = await getAuth();
-    res = await fetch(url, { headers: authHeaders(auth) });
-    body = await res.json().catch(() => ({}));
+  let body = await run(auth);
+  for (let attempt = 0; !isOk(body) && attempt < MAX_AUTH_RETRIES; attempt++) {
+    auth = await forceRelogin(auth.accessToken);
+    body = await run(auth);
   }
-  if (body?.result && body.result !== "0000") {
-    throw new Error(`COROS ${path} error: ${body?.message || res.status}`);
+  if (!isOk(body)) {
+    throw new Error(`COROS ${label} error: ${body?.message || "unknown"}`);
   }
   return body.data as T;
+}
+
+/** GET a web endpoint, re-logging-in and retrying on a stale-token error. */
+async function webGet<T = any>(path: string): Promise<T> {
+  return withAuthRetry<T>(path, (auth) =>
+    fetch(`${WEB_BASE[auth.region]}${path}`, { headers: authHeaders(auth) }).then((r) =>
+      r.json().catch(() => ({})),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -484,30 +523,19 @@ export async function fetchActivityDetail(
   labelId: string,
   sportType: number,
 ): Promise<ActivityDetail> {
-  const auth = await getAuth();
-  const url = `${WEB_BASE[auth.region]}/activity/detail/query`;
-  const doFetch = async (a: Auth) =>
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": USER_AGENT,
-        accessToken: a.accessToken,
-        yfheader: JSON.stringify({ userId: a.userId }),
-      },
-      body: new URLSearchParams({ labelId, sportType: String(sportType), userId: a.userId }),
-    }).then((r) => r.json());
-
-  let body = await doFetch(auth);
-  if (body?.result && body.result !== "0000") {
-    cachedAuth = null;
-    body = await doFetch(await getAuth());
-  }
-  if (body?.result !== "0000") {
-    throw new Error(`COROS activity detail error: ${body?.message || "unknown"}`);
-  }
-
-  const d = body.data ?? {};
+  const d =
+    (await withAuthRetry<any>("activity detail", (auth) =>
+      fetch(`${WEB_BASE[auth.region]}/activity/detail/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": USER_AGENT,
+          accessToken: auth.accessToken,
+          yfheader: JSON.stringify({ userId: auth.userId }),
+        },
+        body: new URLSearchParams({ labelId, sportType: String(sportType), userId: auth.userId }),
+      }).then((r) => r.json().catch(() => ({}))),
+    )) ?? {};
   const s = d.summary ?? {};
 
   const hrZoneGroup = (d.zoneList ?? []).find((z: any) => z.type === 126) ?? (d.zoneList ?? [])[0];
