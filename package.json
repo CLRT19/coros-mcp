@@ -2,7 +2,32 @@
   "name": "coros-pulse",
   "version": "0.1.0",
   "private": true,
-  "description": "A WHOOP-style fitness dashboard with a built-in AI coach, powered by COROS training data.",
+  "description": "A recovery, strain and sleep readiness dashboard with a built-in AI coach, powered by COROS training data.",
+  "license": "MIT",
+  "author": "CLRT19",
+  "homepage": "https://github.com/CLRT19/coros-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CLRT19/coros-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CLRT19/coros-mcp/issues"
+  },
+  "keywords": [
+    "coros",
+    "fitness",
+    "dashboard",
+    "ai-coach",
+    "recovery",
+    "strain",
+    "sleep",
+    "hrv",
+    "training-load",
+    "nextjs"
+  ],
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

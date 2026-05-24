@@ -69,7 +69,7 @@ ${recent || "none in range"}
 ${trend}`;
 }
 
-const SYSTEM = `You are the built-in AI coach inside a WHOOP-style training app that runs on COROS watch data. You are a knowledgeable, encouraging endurance & strength coach with a sports-science grounding.
+const SYSTEM = `You are the built-in AI coach inside a training-readiness app that runs on COROS watch data. You are a knowledgeable, encouraging endurance & strength coach with a sports-science grounding.
 
 How to read the metrics:
 - RECOVERY (0-100%): how ready the body is today. Green >=67 (push), Yellow 34-66 (moderate), Red <34 (rest/easy). Driven by sleep HRV vs baseline, resting HR vs baseline, and sleep.
@@ -140,7 +140,11 @@ export async function POST(req: Request) {
     summary = await getSummary();
   } catch (e) {
     return Response.json(
-      { error: `Could not load COROS data: ${(e as Error).message}` },
+      {
+        error:
+          "Couldn't load your COROS data — check COROS_EMAIL, COROS_PASSWORD and COROS_REGION in your .env.local.",
+        detail: (e as Error).message,
+      },
       { status: 502 },
     );
   }

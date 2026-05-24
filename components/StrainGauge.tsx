@@ -1,6 +1,6 @@
 import { C } from "@/lib/chartColors";
 
-/** WHOOP-style 0-21 strain gauge (semicircular arc). */
+/** 0-21 strain gauge (semicircular arc). */
 export default function StrainGauge({
   strain,
   weekAvg,

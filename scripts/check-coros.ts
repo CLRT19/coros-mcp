@@ -1,6 +1,6 @@
 /**
  * Smoke test: log in to COROS, pull the real data, and print the computed
- * WHOOP-style summary. Run with `npm run coros:check`.
+ * readiness summary. Run with `npm run coros:check`.
  */
 import {
   fetchActivities,
@@ -49,7 +49,7 @@ async function main() {
   console.log("");
 
   const summary = buildSummary(dashboard, analysis, activities, sleep);
-  console.log("=== WHOOP-STYLE SUMMARY ===");
+  console.log("=== READINESS SUMMARY ===");
   console.log("Recovery:", summary.recovery.score, `(${summary.recovery.band})`);
   console.log("  drivers:", summary.recovery.drivers);
   console.log("  HRV:", summary.recovery.hrv, "base", summary.recovery.hrvBaseline);

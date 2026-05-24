@@ -1,5 +1,5 @@
 /**
- * Shared loader: pull everything from COROS and build the WHOOP-style summary.
+ * Shared loader: pull everything from COROS and build the readiness summary.
  * Used by the dashboard page (server component) and the AI coach route.
  *
  * Results are cached for a few minutes so a page load + coach chat in the same

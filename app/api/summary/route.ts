@@ -11,7 +11,11 @@ export async function GET(req: Request) {
     return NextResponse.json(summary);
   } catch (e) {
     return NextResponse.json(
-      { error: (e as Error).message || "Failed to load COROS data" },
+      {
+        error:
+          "Couldn't load your COROS data. Double-check COROS_EMAIL, COROS_PASSWORD and COROS_REGION in your .env.local, then try again.",
+        detail: (e as Error).message || "unknown error",
+      },
       { status: 500 },
     );
   }

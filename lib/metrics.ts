@@ -1,8 +1,8 @@
 /**
- * WHOOP-style scoring + COROS EvoLab metrics on top of raw COROS data.
+ * Recovery / strain / sleep readiness scoring + COROS EvoLab metrics on top of raw COROS data.
  *
  *  Recovery (0-100%)  — HRV vs baseline + RHR vs baseline + sleep performance.
- *  Strain   (0-21)    — logarithmic map of daily training load (WHOOP scale).
+ *  Strain   (0-21)    — logarithmic map of daily training load (0-21 scale).
  *  Sleep    (0-100%)  — hours slept vs need × efficiency, + stages / HR / HRV.
  *  EvoLab             — COROS running fitness, thresholds, breakdown scores.
  *  Load               — 7d / 28d load, acute:chronic ratio, weekly history.

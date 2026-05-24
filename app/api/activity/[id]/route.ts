@@ -12,6 +12,12 @@ export async function GET(
     const detail = await fetchActivityDetail(params.id, sportType);
     return NextResponse.json(detail);
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+    return NextResponse.json(
+      {
+        error: "Couldn't load this activity's detail from COROS.",
+        detail: (e as Error).message,
+      },
+      { status: 502 },
+    );
   }
 }
