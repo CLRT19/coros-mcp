@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity as ActivityIcon, Bike, Dumbbell, Footprints, Mountain, Waves, type LucideIcon } from "lucide-react";
 import type { Activity } from "@/lib/coros";
 import ActivityDetail from "./ActivityDetail";
@@ -29,6 +29,12 @@ function sportIcon(sportType: number): LucideIcon {
 
 export default function ActivityList({ activities }: { activities: Activity[] }) {
   const [selected, setSelected] = useState<Activity | null>(null);
+
+  // Deep-link: ?activity=<id> opens that activity on load.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("activity");
+    if (id) setSelected(activities.find((a) => a.id === id) ?? null);
+  }, [activities]);
   return (
     <div className="rounded-xl border border-ink-600/60 bg-ink-800 p-4">
       <span className="label">Recent activities</span>
