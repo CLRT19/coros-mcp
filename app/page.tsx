@@ -1,12 +1,11 @@
 import { getSummary } from "@/lib/data";
 import type { Summary } from "@/lib/metrics";
-import { Activity, BatteryCharging, Flame, Gauge, HeartPulse, TrendingUp } from "lucide-react";
+import { Gauge, TrendingUp } from "lucide-react";
 import RecoveryRing from "@/components/RecoveryRing";
 import StrainGauge from "@/components/StrainGauge";
 import SleepPanel from "@/components/SleepPanel";
 import EvoLabPanel from "@/components/EvoLabPanel";
 import LoadPanel from "@/components/LoadPanel";
-import MetricCard from "@/components/MetricCard";
 import TrendChart from "@/components/TrendChart";
 import ActivityList from "@/components/ActivityList";
 import Coach from "@/components/Coach";
@@ -88,7 +87,7 @@ export default async function Page() {
         <RefreshButton />
       </header>
 
-      {/* TODAY: recovery / strain / evolab */}
+      {/* TODAY: recovery / strain / training status */}
       <section className="mt-6">
         <Eyebrow>Today</Eyebrow>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -109,36 +108,30 @@ export default async function Page() {
             <StrainGauge strain={strain.today} weekAvg={strain.weekAvg} load={strain.loadToday} />
           </div>
 
-          <EvoLabPanel evolab={summary.evolab} />
-        </div>
-      </section>
-
-      {/* TRENDS + COACH */}
-      <section className="mt-7 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          <div>
-            <Eyebrow>Training Status</Eyebrow>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <MetricCard label="Base Fitness" icon={TrendingUp} accent="#18c29c" value={fitness.current ?? "–"} sub={deltaStr(fitness.trend7d)} />
-              <MetricCard label="Fatigue" icon={Flame} accent="#ff7a47" value={fitness.fatigue ?? "–"} sub="acute load" />
-              <MetricCard
+          {/* Training Status (EvoLab fitness/fatigue/form) */}
+          <div className="rounded-xl border border-ink-600/60 bg-ink-800 p-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={14} className="text-recovery-high" />
+              <span className="label">Training Status</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Stat label="Base Fitness" value={fitness.current ?? "–"} sub={deltaStr(fitness.trend7d)} />
+              <Stat label="Fatigue" value={fitness.fatigue ?? "–"} sub="acute load" />
+              <Stat
                 label="Form"
-                icon={Activity}
-                accent="#8b6dff"
                 value={fitness.form ?? "–"}
                 sub={fitness.form != null ? (fitness.form > 5 ? "fresh" : fitness.form < -20 ? "detrained" : "balanced") : undefined}
               />
-              <MetricCard
-                label="Recovery Time"
-                icon={BatteryCharging}
-                accent="#ff5a1f"
-                value={recHrs != null ? recHrs : "–"}
-                unit="h"
-                sub={recHrs === 0 ? "fully recovered" : "to full"}
-              />
+              <Stat label="Recovery Time" value={recHrs != null ? recHrs : "–"} unit="h" sub={recHrs === 0 ? "fully recovered" : "to full"} />
             </div>
           </div>
+        </div>
+      </section>
 
+      {/* DETAIL + COACH */}
+      <section className="mt-7 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <EvoLabPanel evolab={summary.evolab} />
           <SleepPanel sleep={summary.sleep} />
           <LoadPanel load={summary.load} />
           <TrendChart trend={summary.trend} />

@@ -15,10 +15,19 @@ import type {
   Activity,
   DailyRecord,
   DashboardData,
+  RacePrediction,
   SleepNight,
   TrainingAnalysis,
   WeeklyLoad,
 } from "./coros";
+
+export interface AbilityScore {
+  key: string;
+  label: string;
+  score: number | null;
+  paceLo: number | null; // sec/km (faster bound)
+  paceHi: number | null; // sec/km (slower bound)
+}
 
 const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
 const avg = (xs: number[]) =>
@@ -134,14 +143,13 @@ export interface Summary {
   evolab: {
     runningFitness: number | null;
     ranking: number | null;
-    endurance: number | null;
-    threshold: number | null;
-    sprint: number | null;
-    speed: number | null;
+    vo2max: number | null;
+    breakdown: AbilityScore[];
     lthr: number | null;
     thresholdPaceSec: number | null;
     maxHr: number | null;
     rhr: number | null;
+    racePredictions: RacePrediction[];
   };
   load: {
     load7d: number | null;
@@ -363,7 +371,18 @@ export function buildSummary(
     }
   }
 
-  const vo2max = [...daily].reverse().find((d) => d.vo2max != null)?.vo2max ?? null;
+  const vo2max = dashboard.vo2max ?? [...daily].reverse().find((d) => d.vo2max != null)?.vo2max ?? null;
+
+  // EvoLab "Running Fitness Breakdown" with COROS-style pace zones from ltspZone.
+  // paceZones are ordered slowest→fastest (index 0 = slowest pace).
+  const pz = dashboard.paceZones;
+  const z = (i: number) => pz[i]?.pace ?? null;
+  const breakdown: AbilityScore[] = [
+    { key: "endurance", label: "Endurance", score: dashboard.aerobicEnduranceScore, paceLo: z(1), paceHi: z(0) },
+    { key: "threshold", label: "Threshold", score: dashboard.thresholdScore, paceLo: z(4), paceHi: z(2) },
+    { key: "speed", label: "Speed", score: dashboard.anaerobicEnduranceScore, paceLo: z(5), paceHi: z(4) },
+    { key: "sprint", label: "Sprint", score: dashboard.anaerobicCapacityScore, paceLo: null, paceHi: z(5) },
+  ];
 
   return {
     generatedAt: new Date().toISOString(),
@@ -395,18 +414,17 @@ export function buildSummary(
       trend7d,
     },
     evolab: {
-      // COROS "Running Fitness" = staminaLevel (40-100). The four breakdown
-      // spokes share the same scale; for a balanced runner they cluster.
+      // COROS "Running Fitness" = staminaLevel (40-100). The breakdown spokes
+      // share the same scale; for a balanced runner they cluster.
       runningFitness: dashboard.staminaLevel,
       ranking: dashboard.staminaRanking,
-      endurance: dashboard.aerobicEnduranceScore,
-      threshold: dashboard.thresholdScore,
-      sprint: dashboard.anaerobicCapacityScore,
-      speed: dashboard.anaerobicEnduranceScore,
+      vo2max,
+      breakdown,
       lthr: dashboard.lthr,
       thresholdPaceSec: dashboard.ltsp,
       maxHr: dashboard.maxHr,
       rhr: dashboard.rhr,
+      racePredictions: dashboard.racePredictions,
     },
     load: {
       load7d: latestDaily?.load7d ?? null,

@@ -52,7 +52,14 @@ SLEEP last night: ${s.sleep ? `${fmtMin(s.sleep.lastNightMinutes)} (need ${fmtMi
       : ""
   }
 FITNESS (CTL-like): ${s.fitness.current ?? "n/a"} (7-day Δ ${s.fitness.trend7d ?? "n/a"}); FATIGUE: ${s.fitness.fatigue ?? "n/a"}; FORM/freshness: ${s.fitness.form ?? "n/a"}
-EVOLAB: running fitness ${s.evolab.runningFitness ?? "n/a"} (top ${s.evolab.ranking ?? "?"}%); breakdown — endurance ${s.evolab.endurance ?? "n/a"}, threshold ${s.evolab.threshold ?? "n/a"}, sprint ${s.evolab.sprint ?? "n/a"}, speed ${s.evolab.speed ?? "n/a"}; LTHR ${s.evolab.lthr ?? "n/a"} bpm, threshold pace ${s.evolab.thresholdPaceSec ? Math.floor(s.evolab.thresholdPaceSec / 60) + ":" + String(s.evolab.thresholdPaceSec % 60).padStart(2, "0") + "/km" : "n/a"}, maxHR ${s.evolab.maxHr ?? "n/a"}
+EVOLAB: running fitness ${s.evolab.runningFitness ?? "n/a"} (top ${s.evolab.ranking ?? "?"}%); VO2max ${s.evolab.vo2max ?? "n/a"}; breakdown — ${s.evolab.breakdown.map((b) => `${b.label.toLowerCase()} ${b.score ?? "n/a"}`).join(", ")}; LTHR ${s.evolab.lthr ?? "n/a"} bpm, threshold pace ${s.evolab.thresholdPaceSec ? Math.floor(s.evolab.thresholdPaceSec / 60) + ":" + String(s.evolab.thresholdPaceSec % 60).padStart(2, "0") + "/km" : "n/a"}, maxHR ${s.evolab.maxHr ?? "n/a"}${
+    s.evolab.racePredictions.length
+      ? "\nRACE PREDICTOR: " +
+        s.evolab.racePredictions
+          .map((r) => `${r.label} ${Math.floor(r.timeSec / 3600)}:${String(Math.floor((r.timeSec % 3600) / 60)).padStart(2, "0")}:${String(r.timeSec % 60).padStart(2, "0")}`)
+          .join(", ")
+      : ""
+  }
 LOAD: 7-day ${s.load.load7d ?? "n/a"}, 28-day ${s.load.load28d ?? "n/a"}, acute:chronic ratio ${s.load.ratio?.toFixed(2) ?? "n/a"}; recommended weekly ${s.load.recMin ?? "?"}-${s.load.recMax ?? "?"}
 
 RECENT WORKOUTS:
