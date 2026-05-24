@@ -5,14 +5,14 @@ Working notes for Claude. Read this first; it captures the non-obvious things
 
 ## What this is
 
-A **WHOOP-style fitness dashboard with a built-in AI coach**, built on the
+A **recovery / strain / sleep readiness dashboard with a built-in AI coach**, built on the
 owner's **COROS** training data. Standalone **Next.js 14 (App Router) + TypeScript
 + Tailwind**. Not Rust — all TS/Node.
 
 The data comes from COROS's **unofficial Training Hub web API** (reverse-engineered).
 COROS also ships an official read-only MCP server (`mcpus.coros.com`) for plugging
 into Claude/ChatGPT, but this app pulls data directly so it can compute its own
-WHOOP-style scores and render a custom UI.
+recovery / strain / sleep readiness scores and render a custom UI.
 
 ## Run / verify
 
@@ -36,7 +36,7 @@ live reply before snapping:
 
 ```
 COROS Training Hub API ─► lib/coros.ts   (auth + typed fetchers, web-only)
-                          lib/metrics.ts (WHOOP-style scoring → Summary)
+                          lib/metrics.ts (readiness scoring → Summary)
                           lib/data.ts    (cached loader, 3-min TTL, in-memory)
                                │
                  ┌─────────────┴──────────────┐
@@ -87,8 +87,10 @@ they work web-only.
   (weekly low/med/high split), `t7dayList`.
 - `/activity/query?startDay&endDay&pageNumber&size` → `dataList` (workouts).
   NB: `calorie` is in **cal, not kcal** (divide by 1000). `isRunTest:1` marks run tests.
-- `/activity/detail/query` (POST form) → **gzipped** response; returns `result:1001`
-  with the params tried so far — not currently used.
+- `/activity/detail/query` (POST form) → **gzipped** response. Requires the
+  `yfheader: {"userId":...}` header or it returns `result:1001`. Wired via
+  `fetchActivityDetail()` → `/api/activity/[id]` → the per-run detail modal
+  (laps, HR zones, per-run VO2max, weather).
 
 **Region note**: this account is `us` → `teamapi.coros.com`.
 
@@ -177,5 +179,3 @@ Never commit `.env.local`. Verify with `git status` before every commit.
   from `/dashboard/detail/query` after a run.
 - No web endpoint for sleep stages — sleep requires the (phone-logging-out) mobile
   API, so it's off by default.
-- `/activity/detail/query` returns gzip + `result:1001` with params tried; per-run
-  detail (laps, per-run VO2max) is not yet wired.
