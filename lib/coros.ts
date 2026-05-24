@@ -115,6 +115,9 @@ function authHeaders(auth: Auth): Record<string, string> {
     "Content-Type": "application/json",
     "User-Agent": USER_AGENT,
     accessToken: auth.accessToken,
+    // Some endpoints (e.g. /activity/detail/query) return result:1001 without
+    // this header; harmless on the others.
+    yfheader: JSON.stringify({ userId: auth.userId }),
   };
 }
 
@@ -439,6 +442,115 @@ function parseActivity(it: any): Activity {
     trainingLoad: it.trainingLoad ?? null,
     avgPower: it.avgPower || null,
     ascent: it.ascent ?? null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Activity detail (laps, HR zones, per-run VO2max) — needs the yfheader header
+// ---------------------------------------------------------------------------
+
+export interface ActivityLap {
+  index: number;
+  avgPaceSec: number | null; // sec/km
+  avgHr: number | null;
+  avgPower: number | null;
+  avgCadence: number | null;
+}
+
+export interface ActivityHrZone {
+  index: number;
+  min: number;
+  max: number;
+  percent: number;
+  seconds: number;
+}
+
+export interface ActivityDetail {
+  labelId: string;
+  name: string;
+  sportType: number;
+  sportName: string;
+  vo2max: number | null; // currentVo2Max — the real per-run VO2max
+  aerobicEffect: number | null; // 0-5
+  anaerobicEffect: number | null;
+  performance: number | null;
+  lapSplitMeters: number | null;
+  laps: ActivityLap[];
+  hrZones: ActivityHrZone[];
+  weather: { tempC: number | null; humidity: number | null; icon: string | null } | null;
+}
+
+export async function fetchActivityDetail(
+  labelId: string,
+  sportType: number,
+): Promise<ActivityDetail> {
+  const auth = await getAuth();
+  const url = `${WEB_BASE[auth.region]}/activity/detail/query`;
+  const doFetch = async (a: Auth) =>
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": USER_AGENT,
+        accessToken: a.accessToken,
+        yfheader: JSON.stringify({ userId: a.userId }),
+      },
+      body: new URLSearchParams({ labelId, sportType: String(sportType), userId: a.userId }),
+    }).then((r) => r.json());
+
+  let body = await doFetch(auth);
+  if (body?.result && body.result !== "0000") {
+    cachedAuth = null;
+    body = await doFetch(await getAuth());
+  }
+  if (body?.result !== "0000") {
+    throw new Error(`COROS activity detail error: ${body?.message || "unknown"}`);
+  }
+
+  const d = body.data ?? {};
+  const s = d.summary ?? {};
+
+  const hrZoneGroup = (d.zoneList ?? []).find((z: any) => z.type === 126) ?? (d.zoneList ?? [])[0];
+  const hrZones: ActivityHrZone[] = (hrZoneGroup?.zoneItemList ?? []).map((z: any) => ({
+    index: z.zoneIndex,
+    min: z.leftScope,
+    max: z.rightScope,
+    percent: z.percent,
+    seconds: z.second,
+  }));
+
+  const lapItems = (d.lapList ?? [])[0]?.lapItemList ?? [];
+  const laps: ActivityLap[] = lapItems.map((l: any, i: number) => ({
+    index: i + 1,
+    avgPaceSec: l.avgPace ? Math.round(l.avgPace) : l.adjustedPace || null,
+    avgHr: l.avgHr || null,
+    avgPower: l.avgPower || null,
+    avgCadence: l.avgCadence || null,
+  }));
+
+  const w = d.weather;
+  const weather =
+    w && w.temperature != null
+      ? {
+          tempC: w.temperature != null ? Math.round(w.temperature / 10) : null,
+          humidity: w.humidity != null ? Math.round(w.humidity / 10) : null,
+          icon: w.imagePath && w.fileName ? `${w.imagePath}${w.fileName}` : null,
+        }
+      : null;
+
+  return {
+    labelId,
+    name: s.name || SPORT_NAMES[sportType] || `Sport ${sportType}`,
+    sportType,
+    sportName: SPORT_NAMES[sportType] || `Sport ${sportType}`,
+    vo2max: s.currentVo2Max || null,
+    aerobicEffect: s.aerobicEffect ?? null,
+    anaerobicEffect: s.anaerobicEffect ?? null,
+    performance: s.performance === -1 ? null : s.performance ?? null,
+    lapSplitMeters: d.lapList?.[0]?.lapDistance ?? null,
+    laps,
+    hrZones,
+    weather,
   };
 }
 

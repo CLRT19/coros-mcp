@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { Activity as ActivityIcon, Bike, Dumbbell, Footprints, Mountain, Waves, type LucideIcon } from "lucide-react";
 import type { Activity } from "@/lib/coros";
+import ActivityDetail from "./ActivityDetail";
 
 function fmtDate(unixSec: number) {
   if (!unixSec) return "";
@@ -14,16 +18,17 @@ function dur(sec: number | null) {
 }
 
 function sportIcon(sportType: number): LucideIcon {
-  if (sportType === 102 || sportType === 104 || sportType === 105) return Mountain; // trail / hike / climb
-  if (sportType >= 100 && sportType < 200) return Footprints; // run family
+  if (sportType === 102 || sportType === 104 || sportType === 105) return Mountain;
+  if (sportType >= 100 && sportType < 200) return Footprints;
   if (sportType >= 200 && sportType < 300) return Bike;
-  if (sportType >= 300 && sportType < 400) return Waves; // swim
-  if (sportType === 402) return Dumbbell; // strength
-  if (sportType === 900) return Footprints; // walk
+  if (sportType >= 300 && sportType < 400) return Waves;
+  if (sportType === 402) return Dumbbell;
+  if (sportType === 900) return Footprints;
   return ActivityIcon;
 }
 
 export default function ActivityList({ activities }: { activities: Activity[] }) {
+  const [selected, setSelected] = useState<Activity | null>(null);
   return (
     <div className="rounded-xl border border-ink-600/60 bg-ink-800 p-4">
       <span className="label">Recent activities</span>
@@ -34,7 +39,11 @@ export default function ActivityList({ activities }: { activities: Activity[] })
         {activities.map((a) => {
           const Icon = sportIcon(a.sportType);
           return (
-            <div key={a.id} className="flex items-center gap-3 py-2.5">
+            <button
+              key={a.id}
+              onClick={() => setSelected(a)}
+              className="flex w-full items-center gap-3 py-2.5 text-left transition hover:opacity-80"
+            >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-700 text-slate-300">
                 <Icon size={16} />
               </div>
@@ -53,10 +62,11 @@ export default function ActivityList({ activities }: { activities: Activity[] })
                   {a.trainingLoad ? ` · ${a.trainingLoad} TL` : ""}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
+      {selected && <ActivityDetail activity={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }

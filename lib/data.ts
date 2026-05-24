@@ -8,6 +8,7 @@
 import {
   daysAgo,
   fetchActivities,
+  fetchActivityDetail,
   fetchTrainingAnalysis,
   fetchDashboard,
   fetchSleep,
@@ -41,7 +42,23 @@ async function load(): Promise<Summary> {
     }
   }
 
-  return buildSummary(dashboard, analysis, activities, sleep);
+  const summary = buildSummary(dashboard, analysis, activities, sleep);
+
+  // Backfill VO2max from the most recent run's detail (currentVo2Max). The
+  // dashboard summary doesn't expose VO2max; the per-run detail does.
+  if (summary.evolab.vo2max == null) {
+    const latestRun = activities.find((a) => a.sportType >= 100 && a.sportType < 105);
+    if (latestRun) {
+      try {
+        const detail = await fetchActivityDetail(latestRun.id, latestRun.sportType);
+        if (detail.vo2max != null) summary.evolab.vo2max = detail.vo2max;
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  return summary;
 }
 
 export async function getSummary(force = false): Promise<Summary> {
