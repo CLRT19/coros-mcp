@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles } from "lucide-react";
+import Markdown from "./Markdown";
 
 interface Msg {
   role: "user" | "assistant";
@@ -167,12 +168,18 @@ export default function Coach() {
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                m.role === "user" ? "bg-coros text-ink-900" : "bg-ink-700 text-slate-200"
+              className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                m.role === "user"
+                  ? "whitespace-pre-wrap bg-coros text-ink-900"
+                  : "bg-ink-700 text-slate-200"
               }`}
             >
               {m.content ? (
-                m.content
+                m.role === "assistant" ? (
+                  <Markdown>{m.content}</Markdown>
+                ) : (
+                  m.content
+                )
               ) : busy && i === messages.length - 1 ? (
                 <span className="inline-flex items-center gap-1 py-1">
                   <span className="dot h-1.5 w-1.5 rounded-full bg-slate-400" />

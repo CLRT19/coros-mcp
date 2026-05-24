@@ -99,7 +99,7 @@ ${contextBlock(s)}
 === CONVERSATION ===
 ${convo}
 
-Reply as the coach to the latest USER message. Plain text only — no "ASSISTANT:" prefix, no markdown headers.`;
+Reply as the coach to the latest USER message. No "ASSISTANT:" prefix. You may use light Markdown — bold, italics, and bullet lists.`;
 }
 
 // Expose which backends are available so the UI can render a provider toggle.
