@@ -36,9 +36,12 @@ export default function SleepPanel({ sleep }: { sleep: Summary["sleep"] }) {
           <Moon size={14} className="text-sleep" />
           <span className="label">Sleep</span>
         </div>
-        <p className="mt-4 text-sm text-slate-500">
-          No sleep data. Set <code className="text-slate-300">COROS_ENABLE_SLEEP=1</code> in{" "}
-          <code className="text-slate-300">.env.local</code>.
+        <p className="mt-4 text-sm leading-relaxed text-slate-500">
+          Sleep stages are off (web-login-only mode). They require COROS&apos;s mobile
+          API, which signs the COROS app out on your phone. To enable anyway, set{" "}
+          <code className="text-slate-300">COROS_ENABLE_SLEEP=1</code> in{" "}
+          <code className="text-slate-300">.env.local</code>. HRV &amp; recovery still
+          work from the web API.
         </p>
       </div>
     );
